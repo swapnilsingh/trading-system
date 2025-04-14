@@ -1,0 +1,12 @@
+pandas
+numpy
+redis
+streamlit
+websockets
+requests
+scikit-learn
+tensorflow
+torch
+ta
+cudf
+cuml
