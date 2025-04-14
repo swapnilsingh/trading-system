@@ -8,5 +8,4 @@ scikit-learn
 tensorflow
 torch
 ta
-cudf
-cuml
+pyyaml
