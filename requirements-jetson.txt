@@ -1,0 +1,11 @@
+# Lightweight requirements for Jetson Nano Super (no cuDF/cuML)
+pandas
+numpy
+websockets
+requests
+streamlit
+redis
+pydantic
+ta
+scikit-learn
+PyYAML
