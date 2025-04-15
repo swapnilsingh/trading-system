@@ -1,6 +1,4 @@
 fastapi
 uvicorn
 pydantic
-cupy
-cudf
-torch
+numpy
