@@ -7,15 +7,19 @@ import websockets
 import json
 from datetime import datetime
 import logging
+import pandas as pd
+from collections import defaultdict
 from utils.config import load_config
 from utils.schemas import TICK_SCHEMA, format_tick_data
+from utils.redis_queue import get_redis_client, push_to_queue
 
-# Toggle JSON logging
-USE_JSON_LOGS = True
+USE_JSON_LOGS = False
+INTERVAL = "1min"
+BUFFER = defaultdict(list)
 
 # Setup logger
 logger = logging.getLogger("BinanceTickStreamer")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 
 if USE_JSON_LOGS:
@@ -42,9 +46,21 @@ class BinanceTickStreamer:
         self.symbol = config["symbol"].lower()
         self.ws_url = f"wss://stream.binance.com:9443/ws/{self.symbol}@trade"
         self.on_tick_callback = on_tick_callback
+        self.redis = get_redis_client(config)
+
+    def aggregate_and_push(self, minute_key):
+        df = pd.DataFrame(BUFFER[minute_key])
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df.set_index("timestamp", inplace=True)
+        ohlcv = df["price"].resample("1min").ohlc()
+        ohlcv["volume"] = df["quantity"].resample("1min").sum()
+        ohlcv_json = ohlcv.to_json()
+        redis_key = f"ohlcv:{self.symbol.upper()}:{INTERVAL}"
+        push_to_queue(self.redis, redis_key, ohlcv_json, ttl=60)
+        logger.info(f"Flushed OHLCV to Redis: {redis_key}")
 
     async def connect_and_stream(self):
-        logger.info(f"Connecting to Binance WebSocket for {self.symbol.upper()}...")
+        logger.info(f"✅ Connected to Binance WebSocket for {self.symbol.upper()}")
         async for websocket in websockets.connect(self.ws_url):
             try:
                 async for message in websocket:
@@ -53,10 +69,24 @@ class BinanceTickStreamer:
                         "symbol": self.symbol.upper(),
                         "price": float(data['p']),
                         "quantity": float(data['q']),
-                        "trade_time": datetime.utcfromtimestamp(data['T'] / 1000).isoformat() + "Z"
+                        "timestamp": data['T']
                     }
-                    logger.debug(f"Raw WebSocket message: {data}")
-                    formatted = format_tick_data(tick_data)
+                    minute_ts = data['T'] // 60000 * 60000
+                    BUFFER[minute_ts].append(tick_data)
+
+                    # Flush oldest buffer
+                    if len(BUFFER) > 1:
+                        oldest = sorted(BUFFER.keys())[0]
+                        self.aggregate_and_push(oldest)
+                        del BUFFER[oldest]
+
+                    formatted = format_tick_data({
+                        "symbol": tick_data["symbol"],
+                        "price": tick_data["price"],
+                        "quantity": tick_data["quantity"],
+                        "trade_time": datetime.utcfromtimestamp(data['T'] / 1000).isoformat() + "Z"
+                    })
+
                     if self.on_tick_callback:
                         await self.on_tick_callback(formatted)
                     else:
@@ -69,10 +99,10 @@ class BinanceTickStreamer:
                 logger.exception(f"Unexpected error occurred: {e}. Reconnecting in 3 seconds...")
                 await asyncio.sleep(3)
 
-# Example callback: Print to console
+# Default behavior: run aggregator
 if __name__ == "__main__":
     async def print_tick(tick):
-        logger.info(json.dumps(tick))
+        logger.debug(json.dumps(tick))
 
     config = load_config()
     streamer = BinanceTickStreamer(config, on_tick_callback=print_tick)
