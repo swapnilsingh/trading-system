@@ -37,33 +37,32 @@ async def calculate_indicators(request: IndicatorAPIRequest):
             # Load OHLCV data
             df = pd.read_json(StringIO(raw_ohlcv_str), convert_dates=False)
 
-            # Ensure timestamp index from millisecond integers
+            # Fix timestamp parsing: stringified epoch ms → int → datetime
             if "timestamp" in df.columns:
-                df["timestamp"] = pd.to_datetime(df["timestamp"].astype("int64"), unit="ms", errors="coerce")
+                df["timestamp"] = pd.to_numeric(df["timestamp"], errors="coerce").astype("Int64")
+                df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", errors="coerce")
                 df.set_index("timestamp", inplace=True)
             else:
                 df.index = pd.to_datetime(df.index, errors="coerce")
 
-            # Drop bad rows
+            # Drop rows with invalid timestamps
             df = df[df.index.notnull()]
             df = df.sort_index()
 
-            # Log for debugging
+            # Debug logs
             logger.info(f"[{name}] Index dtype: {df.index.dtype}")
             logger.info(f"[{name}] Index sample: {df.index[:3]}")
             logger.info(f"[{name}] Range: {details.start_time} → {details.end_time}")
 
-            # Convert request time window
+            # Time window slicing
             start = pd.to_datetime(details.start_time)
             end = pd.to_datetime(details.end_time)
-
-            # Slice by time window
             df = df[(df.index >= start) & (df.index <= end)].copy()
 
             if df.empty:
                 raise HTTPException(status_code=422, detail=f"No OHLCV data in selected range for {name}")
 
-            # Prepare indicator output
+            # Final indicator calculation
             latest = df.iloc[-1]
             indicator_output = {
                 "symbol": request.symbol,
