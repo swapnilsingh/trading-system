@@ -14,12 +14,12 @@ services:
   indicator:
     build: .
     container_name: indicator
-    command: uvicorn indicator_api.indicator_service:app --host 0.0.0.0 --port 8000 --log-level warning --no-access-log
+    command: uvicorn indicator_api.indicator_service:app --host 0.0.0.0 --port 8000 --log-level info
     restart: always
-    networks:
-      - trading-net
+    network_mode: host
     volumes:
       - ./config:/app/config
+
 
   aggregator:
     build: .
