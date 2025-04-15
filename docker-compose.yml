@@ -16,10 +16,10 @@ services:
     container_name: indicator
     command: uvicorn indicator_api.indicator_service:app --host 0.0.0.0 --port 8000 --log-level info
     restart: always
-    network_mode: host
+    networks:
+      - trading-net
     volumes:
       - ./config:/app/config
-
 
   aggregator:
     build: .
