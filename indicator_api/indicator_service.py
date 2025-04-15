@@ -27,6 +27,7 @@ async def calculate_indicators(request: IndicatorAPIRequest):
 
             # Read DataFrame from string
             df = pd.read_json(StringIO(raw_ohlcv_str))
+            df.index = pd.to_datetime(df.index)
 
             # Convert time range to pandas timestamps
             start = pd.to_datetime(details.start_time)
