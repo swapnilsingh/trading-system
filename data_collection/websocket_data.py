@@ -56,7 +56,7 @@ class BinanceTickStreamer:
         ohlcv["volume"] = df["quantity"].resample("1min").sum()
         ohlcv_json = ohlcv.to_json()
         redis_key = f"ohlcv:{self.symbol.upper()}:{INTERVAL}"
-        push_to_queue(self.redis, redis_key, ohlcv_json, ttl=60)
+        self.redis.set(redis_key, ohlcv_json, ex=60)
         logger.info(f"Flushed OHLCV to Redis: {redis_key}")
 
     async def connect_and_stream(self):
