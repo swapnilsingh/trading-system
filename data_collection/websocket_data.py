@@ -80,18 +80,6 @@ class BinanceTickStreamer:
                         self.aggregate_and_push(oldest)
                         del BUFFER[oldest]
 
-                    formatted = format_tick_data({
-                        "symbol": tick_data["symbol"],
-                        "price": tick_data["price"],
-                        "quantity": tick_data["quantity"],
-                        "trade_time": datetime.utcfromtimestamp(data['T'] / 1000).isoformat() + "Z"
-                    })
-
-                    if self.on_tick_callback:
-                        await self.on_tick_callback(formatted)
-                    else:
-                        logger.info(formatted)
-
             except websockets.ConnectionClosed:
                 logger.warning("WebSocket connection closed. Reconnecting in 3 seconds...")
                 await asyncio.sleep(3)
@@ -101,9 +89,6 @@ class BinanceTickStreamer:
 
 # Default behavior: run aggregator
 if __name__ == "__main__":
-    async def print_tick(tick):
-        logger.info(tick)
-
     config = load_config()
-    streamer = BinanceTickStreamer(config, on_tick_callback=print_tick)
+    streamer = BinanceTickStreamer(config)
     asyncio.run(streamer.connect_and_stream())
