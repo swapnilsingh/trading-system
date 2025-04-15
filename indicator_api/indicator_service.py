@@ -44,9 +44,9 @@ async def calculate_indicators(request: IndicatorAPIRequest):
             df = df.sort_index()
 
             # Log pre-slice state
-            logger.info(f"[{name}] Parsed timestamp range: {df.index.min()} → {df.index.max()}")
-            logger.info(f"[{name}] Shape before slicing: {df.shape}")
-            logger.info(f"[{name}] Requested slice: {details.start_time} → {details.end_time}")
+            logger.debug(f"[{name}] Parsed timestamp range: {df.index.min()} → {df.index.max()}")
+            logger.debug(f"[{name}] Shape before slicing: {df.shape}")
+            logger.debug(f"[{name}] Requested slice: {details.start_time} → {details.end_time}")
 
             # Slice time range safely
             start = pd.to_datetime(details.start_time).tz_localize(None)
@@ -54,7 +54,7 @@ async def calculate_indicators(request: IndicatorAPIRequest):
             df = df[(df.index >= start) & (df.index <= end)].copy()
 
             # Log post-slice state
-            logger.info(f"[{name}] Shape after slicing: {df.shape}")
+            logger.debug(f"[{name}] Shape after slicing: {df.shape}")
 
             if df.empty:
                 raise HTTPException(status_code=422, detail=f"No OHLCV data in selected range for {name}")
