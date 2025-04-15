@@ -10,3 +10,4 @@ ta
 scikit-learn
 PyYAML
 uvicorn
+fastapi
