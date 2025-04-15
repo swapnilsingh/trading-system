@@ -73,6 +73,9 @@ class IndicatorModel(BaseModel):
     bollinger_lower: Optional[float] = None
     bollinger_middle: Optional[float] = None
     atr: Optional[float] = None
+    sma50: Optional[float] = None
+    sma200: Optional[float] = None
+
 
 # API Request/Response Schemas
 class SignalRequest(BaseModel):
