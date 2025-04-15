@@ -1,4 +1,4 @@
-# indicator_api/rsi.py
+# indicator_api.indicators/rsi.py
 from ta.momentum import RSIIndicator
 
 def compute_rsi(df, params):

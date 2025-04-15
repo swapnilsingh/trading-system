@@ -1,6 +1,6 @@
 # utils/schemas.py
 from typing import Dict, Any, Optional, List
-from pydantic import BaseModel, ValidationError, Field, conlist
+from pydantic import BaseModel, ValidationError, Field
 
 TICK_SCHEMA = [
     "symbol", "price", "quantity", "trade_time"
@@ -108,7 +108,7 @@ class TradeExecutionResponse(BaseModel):
 # Model inference related schemas
 class ModelInferenceRequest(BaseModel):
     model_name: str
-    input_features: conlist(float, min_items=1)
+    input_features:  List[float] = Field(..., min_items=1)
     timestamp: Optional[str] = None
     meta: Optional[Dict[str, Any]] = None
 
@@ -136,7 +136,7 @@ class AgentOutput(BaseModel):
 
 class BatchModelInferenceRequest(BaseModel):
     model_name: str
-    input_batch: List[conlist(float, min_items=1)]
+    input_batch: List[float] = Field(..., min_items=1)
     timestamps: Optional[List[str]] = None
 
 SCHEMA_REGISTRY = {

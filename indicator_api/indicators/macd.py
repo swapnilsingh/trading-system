@@ -1,4 +1,4 @@
-# indicator_api/macd.py
+# indicator_api.indicators/macd.py
 from ta.trend import MACD
 
 def compute_macd(df, params):

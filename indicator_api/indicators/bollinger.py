@@ -1,4 +1,4 @@
-# indicator_api/bollinger.py
+# indicator_api.indicators/bollinger.py
 from ta.volatility import BollingerBands
 
 def compute_bollinger(df, params):

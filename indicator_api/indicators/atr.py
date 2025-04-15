@@ -1,4 +1,4 @@
-# indicator_api/atr.py
+# indicator_api.indicators/atr.py
 from ta.volatility import AverageTrueRange
 
 def compute_atr(df, params):
