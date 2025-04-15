@@ -23,7 +23,11 @@ EQUITY_CURVE_SCHEMA = [
 ]
 
 INDICATOR_SCHEMA = [
-    "symbol", "timestamp", "rsi", "macd", "macd_signal", "bollinger_upper", "bollinger_lower", "bollinger_middle", "atr"
+    "symbol", "timestamp", "rsi", "macd", "macd_signal", "williams",
+    "bollinger_upper", "bollinger_lower", "bollinger_middle", "atr",
+    "adx", "cci",
+    "ema5", "ema10", "ema20", "ema50", "ema200",
+    "sma5", "sma10", "sma50", "sma200"
 ]
 
 class TickModel(BaseModel):
@@ -66,22 +70,37 @@ class EquityCurveModel(BaseModel):
 class IndicatorModel(BaseModel):
     symbol: str
     timestamp: str
+
+    # Momentum Indicators
     rsi: Optional[float] = None
     macd: Optional[float] = None
     macd_signal: Optional[float] = None
+    williams: Optional[float] = None
+
+    # Volatility Indicators
     bollinger_upper: Optional[float] = None
     bollinger_lower: Optional[float] = None
     bollinger_middle: Optional[float] = None
     atr: Optional[float] = None
+
+    # Trend Indicators
+    adx: Optional[float] = None
+    cci: Optional[float] = None
+    ema5: Optional[float] = None
+    ema10: Optional[float] = None
+    ema20: Optional[float] = None
+    ema50: Optional[float] = None
+    ema200: Optional[float] = None
+    sma5: Optional[float] = None
+    sma10: Optional[float] = None
     sma50: Optional[float] = None
     sma200: Optional[float] = None
-
 
 # API Request/Response Schemas
 class SignalRequest(BaseModel):
     symbol: str
     timestamp: str
-    indicators: Dict[str, Optional[float]]
+    indicators: IndicatorModel
 
 class SignalResponse(BaseModel):
     symbol: str
@@ -123,7 +142,7 @@ class ModelInferenceResponse(BaseModel):
 class AgentInput(BaseModel):
     symbol: str
     timestamp: str
-    indicators: Dict[str, Optional[float]]
+    indicators: IndicatorModel  # structured input
     meta: Optional[Dict[str, Any]] = None
 
 class AgentOutput(BaseModel):
