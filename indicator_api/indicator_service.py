@@ -10,6 +10,10 @@ from indicator_api.indicators import registry  # updated path for indicators mod
 
 app = FastAPI()
 
+import logging
+
+logger = logging.getLogger("IndicatorService")
+
 @app.post("/indicators/calculate")
 async def calculate_indicators(request: IndicatorAPIRequest):
     cfg = load_config()
@@ -22,40 +26,45 @@ async def calculate_indicators(request: IndicatorAPIRequest):
             raise HTTPException(status_code=404, detail=f"OHLCV data for {request.symbol}:{request.interval} not found")
 
         try:
-            # Decode Redis response to string
+            # Decode Redis value
             raw_ohlcv_str = raw_ohlcv if isinstance(raw_ohlcv, str) else raw_ohlcv.decode("utf-8")
 
-            # Read JSON safely without automatic date inference
+            # Load OHLCV data
             df = pd.read_json(StringIO(raw_ohlcv_str), convert_dates=False)
 
-            # Ensure timestamp column or index is datetime and used as index
+            # Ensure timestamp index
             if "timestamp" in df.columns:
                 df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
                 df.set_index("timestamp", inplace=True)
             else:
                 df.index = pd.to_datetime(df.index, errors="coerce")
 
-            # Drop NaT values caused by parsing errors
+            # Drop bad rows
             df = df[df.index.notnull()]
+            df = df.sort_index()
 
-            # Convert provided start/end window to datetime
+            # Log for debugging
+            logger.info(f"[{name}] Index dtype: {df.index.dtype}")
+            logger.info(f"[{name}] Index sample: {df.index[:3]}")
+            logger.info(f"[{name}] Range: {details.start_time} → {details.end_time}")
+
+            # Convert request time window
             start = pd.to_datetime(details.start_time)
             end = pd.to_datetime(details.end_time)
 
-            # Filter by time range
+            # Slice by time window
             df = df[(df.index >= start) & (df.index <= end)].copy()
 
             if df.empty:
                 raise HTTPException(status_code=422, detail=f"No OHLCV data in selected range for {name}")
 
-            # Prepare base response
+            # Prepare indicator output
             latest = df.iloc[-1]
             indicator_output = {
                 "symbol": request.symbol,
                 "timestamp": str(latest.name)
             }
 
-            # Compute indicator using registry
             if name in registry:
                 result = registry[name](df, details.params or {})
                 indicator_output.update(result)
