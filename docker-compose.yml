@@ -20,6 +20,8 @@ services:
       - trading-net
     volumes:
       - ./config:/app/config
+    ports:
+      - "8000:8000"
 
   aggregator:
     build: .
