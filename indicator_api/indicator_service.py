@@ -32,29 +32,27 @@ async def calculate_indicators(request: IndicatorAPIRequest):
             raise HTTPException(status_code=404, detail=f"No OHLCV data found for {request.symbol}:{request.interval}")
 
         try:
-            # Parse Redis list into DataFrame
-            # Parse Redis OHLCV list into records
+            # Decode Redis list: support bytes or str
             ohlcv_records = [
                 json.loads(row.decode("utf-8") if isinstance(row, bytes) else row)
                 for row in raw_ohlcv_list
             ]
             df = pd.DataFrame(ohlcv_records)
 
-
-            # Convert and index timestamp
+            # Parse timestamp to datetime and set index
             df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", errors="coerce")
             df = df[df["timestamp"].notnull()]
             df.set_index("timestamp", inplace=True)
             df = df.sort_index()
 
-            # Debug logs
+            # Logs for verification
             logger.info(f"[{name}] Index dtype: {df.index.dtype}")
             logger.info(f"[{name}] Index sample: {df.index[:3]}")
             logger.info(f"[{name}] Range: {details.start_time} → {details.end_time}")
 
-            # Time slicing
-            start = pd.to_datetime(details.start_time)
-            end = pd.to_datetime(details.end_time)
+            # Convert and sanitize slicing range
+            start = pd.to_datetime(details.start_time).tz_localize(None)
+            end = pd.to_datetime(details.end_time).tz_localize(None)
             df = df[(df.index >= start) & (df.index <= end)].copy()
 
             if df.empty:
@@ -75,6 +73,7 @@ async def calculate_indicators(request: IndicatorAPIRequest):
             results[name] = format_indicator_data(indicator_output)
 
         except Exception as e:
+            logger.exception(f"Error computing {name}")
             raise HTTPException(status_code=500, detail=f"Failed to compute {name}: {e}")
 
     return results
