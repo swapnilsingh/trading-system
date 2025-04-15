@@ -22,24 +22,23 @@ async def calculate_indicators(request: IndicatorAPIRequest):
             raise HTTPException(status_code=404, detail=f"OHLCV data for {request.symbol}:{request.interval} not found")
 
         try:
-            # Decode if needed
+            # Decode Redis response
             raw_ohlcv_str = raw_ohlcv if isinstance(raw_ohlcv, str) else raw_ohlcv.decode("utf-8")
 
-            # Read DataFrame from string
-            df = pd.read_json(StringIO(raw_ohlcv_str))
+            # Parse DataFrame with datetime index
+            df = pd.read_json(StringIO(raw_ohlcv_str), convert_dates=True)
             df.index = pd.to_datetime(df.index)
+            df = df.set_index(df.index)
 
-            # Convert time range to pandas timestamps
+            # Filter by start/end
             start = pd.to_datetime(details.start_time)
             end = pd.to_datetime(details.end_time)
+            df = df[(df.index >= start) & (df.index <= end)].copy()
 
-            df = df[(df.index >= start) & (df.index <= end)]
-            df = df.copy()
-
+            # Prepare response format
             latest = df.iloc[-1]
             indicator_output = {"symbol": request.symbol, "timestamp": str(latest.name)}
 
-            # Dynamically compute indicator
             if name in registry:
                 result = registry[name](df, details.params or {})
                 indicator_output.update(result)
