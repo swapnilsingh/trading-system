@@ -39,7 +39,10 @@ async def calculate_indicators(request: IndicatorAPIRequest):
 
             # Fix timestamp parsing: stringified epoch ms → int → datetime
             if "timestamp" in df.columns:
-                df["timestamp"] = pd.to_numeric(df["timestamp"], errors="coerce").astype("Int64")
+                logger.info(f"[{name}] Raw timestamp sample: {df['timestamp'].head(3).tolist()}")
+                logger.info(f"[{name}] Raw timestamp dtype: {df['timestamp'].dtype}")
+
+                df["timestamp"] = pd.to_numeric(df["timestamp"], errors="coerce")
                 df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", errors="coerce")
                 df.set_index("timestamp", inplace=True)
             else:
