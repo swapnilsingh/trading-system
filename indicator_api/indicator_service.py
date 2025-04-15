@@ -33,8 +33,13 @@ async def calculate_indicators(request: IndicatorAPIRequest):
 
         try:
             # Parse Redis list into DataFrame
-            ohlcv_records = [json.loads(row.decode("utf-8")) for row in raw_ohlcv_list]
+            # Parse Redis OHLCV list into records
+            ohlcv_records = [
+                json.loads(row.decode("utf-8") if isinstance(row, bytes) else row)
+                for row in raw_ohlcv_list
+            ]
             df = pd.DataFrame(ohlcv_records)
+
 
             # Convert and index timestamp
             df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", errors="coerce")
