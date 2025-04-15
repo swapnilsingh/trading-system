@@ -22,7 +22,7 @@ async def calculate_indicators(request: IndicatorAPIRequest):
             raise HTTPException(status_code=404, detail=f"OHLCV data for {request.symbol}:{request.interval} not found")
 
         try:
-            df = pd.read_json(StringIO(raw_ohlcv.decode("utf-8")))
+            df = pd.read_json(StringIO(raw_ohlcv if isinstance(raw_ohlcv, str) else raw_ohlcv.decode("utf-8")))
             df = df[(df.index >= details.start_time) & (df.index <= details.end_time)]
             df = df.copy()
 
