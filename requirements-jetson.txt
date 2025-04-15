@@ -9,3 +9,4 @@ pydantic>=1.9,<2.0
 ta
 scikit-learn
 PyYAML
+uvicorn
