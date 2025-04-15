@@ -31,36 +31,39 @@ async def calculate_indicators(request: IndicatorAPIRequest):
             raise HTTPException(status_code=404, detail=f"OHLCV data for {request.symbol}:{request.interval} not found")
 
         try:
-            # Decode Redis string
+            # Decode Redis value
             raw_ohlcv_str = raw_ohlcv if isinstance(raw_ohlcv, str) else raw_ohlcv.decode("utf-8")
 
-            # Load DataFrame without automatic date parsing
+            # Load OHLCV data
             df = pd.read_json(StringIO(raw_ohlcv_str), convert_dates=False)
 
-            # Ensure timestamp index is in epoch milliseconds
+            # Ensure timestamp index from millisecond integers
             if "timestamp" in df.columns:
-                df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", errors="coerce")
+                df["timestamp"] = pd.to_datetime(df["timestamp"].astype("int64"), unit="ms", errors="coerce")
                 df.set_index("timestamp", inplace=True)
             else:
                 df.index = pd.to_datetime(df.index, errors="coerce")
 
-            # Drop rows with invalid timestamps
+            # Drop bad rows
             df = df[df.index.notnull()]
             df = df.sort_index()
 
-            # Debug logging
+            # Log for debugging
             logger.info(f"[{name}] Index dtype: {df.index.dtype}")
             logger.info(f"[{name}] Index sample: {df.index[:3]}")
             logger.info(f"[{name}] Range: {details.start_time} → {details.end_time}")
 
-            # Filter by time window
+            # Convert request time window
             start = pd.to_datetime(details.start_time)
             end = pd.to_datetime(details.end_time)
+
+            # Slice by time window
             df = df[(df.index >= start) & (df.index <= end)].copy()
 
             if df.empty:
                 raise HTTPException(status_code=422, detail=f"No OHLCV data in selected range for {name}")
 
+            # Prepare indicator output
             latest = df.iloc[-1]
             indicator_output = {
                 "symbol": request.symbol,
