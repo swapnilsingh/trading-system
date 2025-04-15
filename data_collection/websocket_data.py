@@ -90,7 +90,7 @@ class BinanceTickStreamer:
                     if self.on_tick_callback:
                         await self.on_tick_callback(formatted)
                     else:
-                        logger.info(json.dumps(formatted))
+                        logger.info(formatted)
 
             except websockets.ConnectionClosed:
                 logger.warning("WebSocket connection closed. Reconnecting in 3 seconds...")
@@ -102,7 +102,7 @@ class BinanceTickStreamer:
 # Default behavior: run aggregator
 if __name__ == "__main__":
     async def print_tick(tick):
-        logger.debug(json.dumps(tick))
+        logger.info(tick)
 
     config = load_config()
     streamer = BinanceTickStreamer(config, on_tick_callback=print_tick)
