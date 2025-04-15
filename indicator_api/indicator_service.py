@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException
 from utils.indicator_schema import IndicatorAPIRequest
 from utils.schemas import format_indicator_data
 from utils.redis_queue import get_redis_client, load_config
-from indicators import registry
+from indicator_api import registry
 
 app = FastAPI()
 
