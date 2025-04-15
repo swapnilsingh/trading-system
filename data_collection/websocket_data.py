@@ -57,19 +57,19 @@ class BinanceTickStreamer:
         ohlcv["volume"] = df["quantity"].resample("1min").sum()
         ohlcv.reset_index(inplace=True)
 
-        # Convert timestamp to epoch milliseconds
         ohlcv["timestamp"] = ohlcv["timestamp"].astype("int64") // 1_000_000
-
-        # Reorder columns for clarity
         ohlcv = ohlcv[["timestamp", "open", "high", "low", "close", "volume"]]
 
-        # Convert to list-of-dicts (row format)
-        ohlcv_json = ohlcv.to_dict(orient="records")
-
         redis_key = f"ohlcv:{self.symbol.upper()}:{INTERVAL}"
-        self.redis.set(redis_key, json.dumps(ohlcv_json), ex=60)
 
-        logger.info(f"✅ Flushed OHLCV to Redis (row-format): {redis_key}")
+        # Push each row to Redis list
+        for row in ohlcv.to_dict(orient="records"):
+            self.redis.rpush(redis_key, json.dumps(row))
+
+        # Keep last 500 candles
+        self.redis.ltrim(redis_key, -500, -1)
+
+        logger.info(f"✅ Appended OHLCV to Redis list: {redis_key}")
 
 
     async def connect_and_stream(self):
