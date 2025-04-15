@@ -37,14 +37,20 @@ async def calculate_indicators(request: IndicatorAPIRequest):
             # Load OHLCV data
             df = pd.read_json(StringIO(raw_ohlcv_str), convert_dates=False)
 
-            # Fix timestamp parsing: stringified epoch ms → int → datetime
+            # Convert timestamp from 'timestamp' or fallback to 'trade_time'
             if "timestamp" in df.columns:
                 logger.info(f"[{name}] Raw timestamp sample: {df['timestamp'].head(3).tolist()}")
                 logger.info(f"[{name}] Raw timestamp dtype: {df['timestamp'].dtype}")
-
                 df["timestamp"] = pd.to_numeric(df["timestamp"], errors="coerce")
                 df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", errors="coerce")
                 df.set_index("timestamp", inplace=True)
+
+            elif "trade_time" in df.columns:
+                logger.info(f"[{name}] Fallback to trade_time: {df['trade_time'].head(3).tolist()}")
+                df["timestamp"] = pd.to_numeric(df["trade_time"], errors="coerce")
+                df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", errors="coerce")
+                df.set_index("timestamp", inplace=True)
+
             else:
                 df.index = pd.to_datetime(df.index, errors="coerce")
 
