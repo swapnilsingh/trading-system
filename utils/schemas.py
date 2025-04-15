@@ -1,6 +1,7 @@
 # utils/schemas.py
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, ValidationError, Field
+import math
 
 TICK_SCHEMA = [
     "symbol", "price", "quantity", "trade_time"
@@ -176,6 +177,14 @@ SCHEMA_REGISTRY = {
     "batch_model_inference_request": BatchModelInferenceRequest
 }
 
+def sanitize_for_json(data: dict) -> dict:
+    def sanitize_value(value):
+        if isinstance(value, float):
+            if math.isnan(value) or math.isinf(value):
+                return None
+        return value
+    return {k: sanitize_value(v) for k, v in data.items()}
+
 def format_data_by_type(data: Dict[str, Any], schema_type: str) -> Dict[str, Any]:
     model = SCHEMA_REGISTRY.get(schema_type)
     if not model:
@@ -201,4 +210,4 @@ def format_equity_curve(data: Dict[str, Any]) -> Dict[str, Any]:
     return format_data_by_type(data, "equity")
 
 def format_indicator_data(data: Dict[str, Any]) -> Dict[str, Any]:
-    return format_data_by_type(data, "indicator")
+    return format_data_by_type(sanitize_for_json(data), "indicator")

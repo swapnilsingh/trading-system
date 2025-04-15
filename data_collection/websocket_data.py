@@ -69,7 +69,7 @@ class BinanceTickStreamer:
         # Keep last 500 candles
         self.redis.ltrim(redis_key, -500, -1)
 
-        logger.info(f"✅ Appended OHLCV to Redis list: {redis_key}")
+        logger.debug(f"✅ Appended OHLCV to Redis list: {redis_key}")
 
 
     async def connect_and_stream(self):
