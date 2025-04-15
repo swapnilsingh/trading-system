@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException
 from utils.indicator_schema import IndicatorAPIRequest
 from utils.schemas import format_indicator_data
 from utils.redis_queue import get_redis_client, load_config
-from indicator_api import registry
+from indicator_api.indicators import registry  # updated path for indicators module
 
 app = FastAPI()
 
@@ -22,13 +22,23 @@ async def calculate_indicators(request: IndicatorAPIRequest):
             raise HTTPException(status_code=404, detail=f"OHLCV data for {request.symbol}:{request.interval} not found")
 
         try:
-            df = pd.read_json(StringIO(raw_ohlcv if isinstance(raw_ohlcv, str) else raw_ohlcv.decode("utf-8")))
-            df = df[(df.index >= details.start_time) & (df.index <= details.end_time)]
+            # Decode if needed
+            raw_ohlcv_str = raw_ohlcv if isinstance(raw_ohlcv, str) else raw_ohlcv.decode("utf-8")
+
+            # Read DataFrame from string
+            df = pd.read_json(StringIO(raw_ohlcv_str))
+
+            # Convert time range to pandas timestamps
+            start = pd.to_datetime(details.start_time)
+            end = pd.to_datetime(details.end_time)
+
+            df = df[(df.index >= start) & (df.index <= end)]
             df = df.copy()
 
             latest = df.iloc[-1]
             indicator_output = {"symbol": request.symbol, "timestamp": str(latest.name)}
 
+            # Dynamically compute indicator
             if name in registry:
                 result = registry[name](df, details.params or {})
                 indicator_output.update(result)
