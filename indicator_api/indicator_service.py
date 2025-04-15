@@ -31,39 +31,36 @@ async def calculate_indicators(request: IndicatorAPIRequest):
             raise HTTPException(status_code=404, detail=f"OHLCV data for {request.symbol}:{request.interval} not found")
 
         try:
-            # Decode Redis value
+            # Decode Redis string
             raw_ohlcv_str = raw_ohlcv if isinstance(raw_ohlcv, str) else raw_ohlcv.decode("utf-8")
 
-            # Load OHLCV data
+            # Load DataFrame without automatic date parsing
             df = pd.read_json(StringIO(raw_ohlcv_str), convert_dates=False)
 
-            # Ensure timestamp index
+            # Ensure timestamp index is in epoch milliseconds
             if "timestamp" in df.columns:
-                df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+                df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", errors="coerce")
                 df.set_index("timestamp", inplace=True)
             else:
                 df.index = pd.to_datetime(df.index, errors="coerce")
 
-            # Drop bad rows
+            # Drop rows with invalid timestamps
             df = df[df.index.notnull()]
             df = df.sort_index()
 
-            # Log for debugging
+            # Debug logging
             logger.info(f"[{name}] Index dtype: {df.index.dtype}")
             logger.info(f"[{name}] Index sample: {df.index[:3]}")
             logger.info(f"[{name}] Range: {details.start_time} → {details.end_time}")
 
-            # Convert request time window
+            # Filter by time window
             start = pd.to_datetime(details.start_time)
             end = pd.to_datetime(details.end_time)
-
-            # Slice by time window
             df = df[(df.index >= start) & (df.index <= end)].copy()
 
             if df.empty:
                 raise HTTPException(status_code=422, detail=f"No OHLCV data in selected range for {name}")
 
-            # Prepare indicator output
             latest = df.iloc[-1]
             indicator_output = {
                 "symbol": request.symbol,
