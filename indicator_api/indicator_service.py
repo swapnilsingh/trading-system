@@ -22,33 +22,40 @@ async def calculate_indicators(request: IndicatorAPIRequest):
             raise HTTPException(status_code=404, detail=f"OHLCV data for {request.symbol}:{request.interval} not found")
 
         try:
-            # Decode Redis string
+            # Decode Redis response to string
             raw_ohlcv_str = raw_ohlcv if isinstance(raw_ohlcv, str) else raw_ohlcv.decode("utf-8")
 
-            # Load DataFrame and set datetime index safely
-            df = pd.read_json(StringIO(raw_ohlcv_str), convert_dates=True)
+            # Read JSON safely without automatic date inference
+            df = pd.read_json(StringIO(raw_ohlcv_str), convert_dates=False)
 
+            # Ensure timestamp column or index is datetime and used as index
             if "timestamp" in df.columns:
-                df["timestamp"] = pd.to_datetime(df["timestamp"])
+                df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
                 df.set_index("timestamp", inplace=True)
             else:
-                df.index = pd.to_datetime(df.index)
+                df.index = pd.to_datetime(df.index, errors="coerce")
 
-            # Convert incoming range
+            # Drop NaT values caused by parsing errors
+            df = df[df.index.notnull()]
+
+            # Convert provided start/end window to datetime
             start = pd.to_datetime(details.start_time)
             end = pd.to_datetime(details.end_time)
 
-            # Filter OHLCV window
+            # Filter by time range
             df = df[(df.index >= start) & (df.index <= end)].copy()
 
-            # Construct output record
+            if df.empty:
+                raise HTTPException(status_code=422, detail=f"No OHLCV data in selected range for {name}")
+
+            # Prepare base response
             latest = df.iloc[-1]
             indicator_output = {
                 "symbol": request.symbol,
                 "timestamp": str(latest.name)
             }
 
-            # Compute via registry
+            # Compute indicator using registry
             if name in registry:
                 result = registry[name](df, details.params or {})
                 indicator_output.update(result)
