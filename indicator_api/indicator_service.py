@@ -31,31 +31,14 @@ async def calculate_indicators(request: IndicatorAPIRequest):
             raise HTTPException(status_code=404, detail=f"OHLCV data for {request.symbol}:{request.interval} not found")
 
         try:
-            # Decode Redis value
-            raw_ohlcv_str = raw_ohlcv if isinstance(raw_ohlcv, str) else raw_ohlcv.decode("utf-8")
+            # Decode and load row-format OHLCV
+            raw_ohlcv_str = raw_ohlcv.decode("utf-8") if isinstance(raw_ohlcv, bytes) else raw_ohlcv
+            df = pd.read_json(StringIO(raw_ohlcv_str), orient="records")
 
-            # Load OHLCV data
-            df = pd.read_json(StringIO(raw_ohlcv_str), convert_dates=False)
-
-            # Convert timestamp from 'timestamp' or fallback to 'trade_time'
-            if "timestamp" in df.columns:
-                logger.info(f"[{name}] Raw timestamp sample: {df['timestamp'].head(3).tolist()}")
-                logger.info(f"[{name}] Raw timestamp dtype: {df['timestamp'].dtype}")
-                df["timestamp"] = pd.to_numeric(df["timestamp"], errors="coerce")
-                df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", errors="coerce")
-                df.set_index("timestamp", inplace=True)
-
-            elif "trade_time" in df.columns:
-                logger.info(f"[{name}] Fallback to trade_time: {df['trade_time'].head(3).tolist()}")
-                df["timestamp"] = pd.to_numeric(df["trade_time"], errors="coerce")
-                df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", errors="coerce")
-                df.set_index("timestamp", inplace=True)
-
-            else:
-                df.index = pd.to_datetime(df.index, errors="coerce")
-
-            # Drop rows with invalid timestamps
-            df = df[df.index.notnull()]
+            # Convert timestamp column to datetime and set index
+            df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", errors="coerce")
+            df = df[df["timestamp"].notnull()]
+            df.set_index("timestamp", inplace=True)
             df = df.sort_index()
 
             # Debug logs

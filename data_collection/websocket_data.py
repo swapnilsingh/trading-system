@@ -50,14 +50,27 @@ class BinanceTickStreamer:
 
     def aggregate_and_push(self, minute_key):
         df = pd.DataFrame(BUFFER[minute_key])
-        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
         df.set_index("timestamp", inplace=True)
+
         ohlcv = df["price"].resample("1min").ohlc()
         ohlcv["volume"] = df["quantity"].resample("1min").sum()
-        ohlcv_json = ohlcv.to_json()
+        ohlcv.reset_index(inplace=True)
+
+        # Convert timestamp to epoch milliseconds
+        ohlcv["timestamp"] = ohlcv["timestamp"].astype("int64") // 1_000_000
+
+        # Reorder columns for clarity
+        ohlcv = ohlcv[["timestamp", "open", "high", "low", "close", "volume"]]
+
+        # Convert to list-of-dicts (row format)
+        ohlcv_json = ohlcv.to_dict(orient="records")
+
         redis_key = f"ohlcv:{self.symbol.upper()}:{INTERVAL}"
-        self.redis.set(redis_key, ohlcv_json, ex=60)
-        logger.info(f"Flushed OHLCV to Redis: {redis_key}")
+        self.redis.set(redis_key, json.dumps(ohlcv_json), ex=60)
+
+        logger.info(f"✅ Flushed OHLCV to Redis (row-format): {redis_key}")
+
 
     async def connect_and_stream(self):
         logger.info(f"✅ Connected to Binance WebSocket for {self.symbol.upper()}")
