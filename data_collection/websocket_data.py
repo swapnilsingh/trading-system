@@ -13,40 +13,50 @@ from utils.config import load_config
 from utils.schemas import TICK_SCHEMA, format_tick_data
 from utils.redis_queue import get_redis_client, push_to_queue
 
-USE_JSON_LOGS = False
-INTERVAL = "1min"
 BUFFER = defaultdict(list)
-
-# Setup logger
-logger = logging.getLogger("BinanceTickStreamer")
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-
-if USE_JSON_LOGS:
-    class JSONFormatter(logging.Formatter):
-        def format(self, record):
-            log_record = {
-                "timestamp": self.formatTime(record, datefmt="%Y-%m-%dT%H:%M:%S.%fZ"),
-                "level": record.levelname,
-                "module": record.name,
-                "message": record.getMessage(),
-            }
-            return json.dumps(log_record)
-    formatter = JSONFormatter()
-else:
-    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-logger.propagate = False
 
 class BinanceTickStreamer:
     def __init__(self, config, on_tick_callback=None):
         self.config = config
         self.symbol = config["symbol"].lower()
-        self.ws_url = f"wss://stream.binance.com:9443/ws/{self.symbol}@trade"
+        self.interval = config.get("interval", "1min")
+        self.use_json_logs = config.get("use_json_logs", False)
+        self.max_candles = config.get("max_candles", 500)
+
+        ws_base = config.get("websocket", {}).get("base_url", "wss://stream.binance.com:9443")
+        stream_type = config.get("websocket", {}).get("stream_type", "trade")
+        self.ws_url = f"{ws_base}/ws/{self.symbol}@{stream_type}"
+
         self.on_tick_callback = on_tick_callback
         self.redis = get_redis_client(config)
+
+        self.logger = self._setup_logger()
+
+    def _setup_logger(self):
+        logger = logging.getLogger("BinanceTickStreamer")
+        logger.setLevel(logging.INFO)
+        handler = logging.StreamHandler()
+
+        if self.use_json_logs:
+            class JSONFormatter(logging.Formatter):
+                def format(self, record):
+                    log_record = {
+                        "timestamp": self.formatTime(record, datefmt="%Y-%m-%dT%H:%M:%S.%fZ"),
+                        "level": record.levelname,
+                        "module": record.name,
+                        "message": record.getMessage(),
+                    }
+                    return json.dumps(log_record)
+            formatter = JSONFormatter()
+        else:
+            formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+
+        handler.setFormatter(formatter)
+        logger.handlers.clear()
+        logger.addHandler(handler)
+        logger.propagate = False
+
+        return logger
 
     def aggregate_and_push(self, minute_key):
         df = pd.DataFrame(BUFFER[minute_key])
@@ -60,20 +70,16 @@ class BinanceTickStreamer:
         ohlcv["timestamp"] = ohlcv["timestamp"].astype("int64") // 1_000_000
         ohlcv = ohlcv[["timestamp", "open", "high", "low", "close", "volume"]]
 
-        redis_key = f"ohlcv:{self.symbol.upper()}:{INTERVAL}"
+        redis_key = f"ohlcv:{self.symbol.upper()}:{self.interval}"
 
-        # Push each row to Redis list
         for row in ohlcv.to_dict(orient="records"):
             self.redis.rpush(redis_key, json.dumps(row))
 
-        # Keep last 500 candles
-        self.redis.ltrim(redis_key, -500, -1)
-
-        logger.debug(f"✅ Appended OHLCV to Redis list: {redis_key}")
-
+        self.redis.ltrim(redis_key, 0, self.max_candles - 1)
+        self.logger.debug(f"✅ Appended OHLCV to Redis list: {redis_key}")
 
     async def connect_and_stream(self):
-        logger.info(f"✅ Connected to Binance WebSocket for {self.symbol.upper()}")
+        self.logger.info(f"✅ Connected to Binance WebSocket for {self.symbol.upper()}")
         async for websocket in websockets.connect(self.ws_url):
             try:
                 async for message in websocket:
@@ -87,20 +93,18 @@ class BinanceTickStreamer:
                     minute_ts = data['T'] // 60000 * 60000
                     BUFFER[minute_ts].append(tick_data)
 
-                    # Flush oldest buffer
                     if len(BUFFER) > 1:
                         oldest = sorted(BUFFER.keys())[0]
                         self.aggregate_and_push(oldest)
                         del BUFFER[oldest]
 
             except websockets.ConnectionClosed:
-                logger.warning("WebSocket connection closed. Reconnecting in 3 seconds...")
+                self.logger.warning("WebSocket connection closed. Reconnecting in 3 seconds...")
                 await asyncio.sleep(3)
             except Exception as e:
-                logger.exception(f"Unexpected error occurred: {e}. Reconnecting in 3 seconds...")
+                self.logger.exception(f"Unexpected error occurred: {e}. Reconnecting in 3 seconds...")
                 await asyncio.sleep(3)
 
-# Default behavior: run aggregator
 if __name__ == "__main__":
     config = load_config()
     streamer = BinanceTickStreamer(config)

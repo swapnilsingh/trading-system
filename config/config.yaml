@@ -1,4 +1,11 @@
 symbol: BTCUSDT
+interval: 1min
+use_json_logs: false
+max_candles: 500
+
+websocket:
+  base_url: wss://stream.binance.com:9443
+  stream_type: trade
 
 redis:
   host: redis
