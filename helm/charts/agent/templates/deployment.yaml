@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-{{ .Values.symbol | lower }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agent-{{ .Values.symbol | lower }}
+  template:
+    metadata:
+      labels:
+        app: agent-{{ .Values.symbol | lower }}
+    spec:
+      containers:
+        - name: agent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["python", "agent/agent_processing.py"]
+          args:
+            - "--symbol={{ .Values.symbol }}"
+            - "--interval={{ .Values.interval }}"
+          env:
+            - name: REDIS_HOST
+              value: "{{ .Values.redisHost }}"

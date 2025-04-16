@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: indicator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: indicator
+  template:
+    metadata:
+      labels:
+        app: indicator
+    spec:
+      containers:
+        - name: indicator
+          image: "{{ .Values.indicator.image.repository }}:{{ .Values.indicator.image.tag }}"
+          command: ["uvicorn", "services.indicator_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+          env:
+            - name: REDIS_HOST
+              value: "{{ .Values.indicator.redisHost }}"
+          ports:
+            - containerPort: 8000

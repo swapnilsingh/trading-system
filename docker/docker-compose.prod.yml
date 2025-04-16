@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  indicator:
+    image: your-dockerhub-user/indicator-service:latest
+    container_name: indicator
+    command: uvicorn services.indicator_api.main:app --host 0.0.0.0 --port 8000 --log-level info
+    environment:
+      - REDIS_HOST=redis.trading-system.svc.cluster.local
+    ports:
+      - "8000:8000"
+    restart: always
+    networks:
+      - trading-net
+
+networks:
+  trading-net:
+    driver: bridge

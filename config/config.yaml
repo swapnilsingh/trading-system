@@ -12,3 +12,9 @@ redis:
   port: 6379
   db: 0
   decode_responses: true
+  ohlcv_key_template: "ohlcv:{symbol}:{interval}"
+
+binance:
+  base_url: https://api.binance.com
+  endpoints:
+    klines: /api/v3/klines

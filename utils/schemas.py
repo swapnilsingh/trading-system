@@ -159,6 +159,18 @@ class BatchModelInferenceRequest(BaseModel):
     input_batch: List[float] = Field(..., min_items=1)
     timestamps: Optional[List[str]] = None
 
+class IndicatorRequestItem(BaseModel):
+    start_time: str
+    end_time: str
+    params: Optional[Dict[str, Any]] = {}
+
+class IndicatorCalculationRequest(BaseModel):
+    symbol: str
+    interval: str
+    indicators: Dict[str, IndicatorRequestItem]
+
+
+
 SCHEMA_REGISTRY = {
     "tick": TickModel,
     "ohlcv": OHLCVModel,
@@ -174,7 +186,10 @@ SCHEMA_REGISTRY = {
     "model_inference_response": ModelInferenceResponse,
     "agent_input": AgentInput,
     "agent_output": AgentOutput,
-    "batch_model_inference_request": BatchModelInferenceRequest
+    "batch_model_inference_request": BatchModelInferenceRequest,
+    "indicator_calculation_request": IndicatorCalculationRequest,
+    "indicator_request_item" : IndicatorRequestItem
+
 }
 
 def sanitize_for_json(data: dict) -> dict:

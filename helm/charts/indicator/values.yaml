@@ -1,0 +1,10 @@
+redis:
+  architecture: standalone
+  auth:
+    enabled: false
+
+indicator:
+  image:
+    repository: your-dockerhub-user/indicator-service
+    tag: latest
+  redisHost: redis-master.default.svc.cluster.local

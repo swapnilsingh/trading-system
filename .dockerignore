@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+
+# Compiled binaries
+*.o
+*.a
+*.out
+*.exe
+
+# Datasets
+data/raw/
+data/processed/
+
+# Docker files
+docker-compose.*.yml
+Dockerfile
+.dockerignore
+
+# Misc
+*.zip
+*.tar.gz
+*.ipynb_checkpoints

@@ -1,0 +1,71 @@
+services:
+  redis:
+    image: redis:7
+    container_name: redis
+    command: redis-server --appendonly yes --maxmemory 100mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - trading-net
+
+  indicator:
+    build:
+      context: ../
+      dockerfile: services/indicator_api/Dockerfile
+    container_name: indicator
+    command: uvicorn services.indicator_api.main:app --host 0.0.0.0 --port 8000
+    environment:
+      - REDIS_HOST=redis
+    volumes:
+      - ../config:/app/config
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - trading-net
+
+  websocket-streamer:
+    build:
+      context: ../
+      dockerfile: streamers/websocket/Dockerfile
+    container_name: websocket-streamer
+    command: python streamers/websocket/websocket_data.py
+    environment:
+      - REDIS_HOST=redis
+    volumes:
+      - ../config:/app/config
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - trading-net
+
+  ohlcv-api:
+    build:
+      context: ../
+      dockerfile: services/ohlcv_api/Dockerfile
+    container_name: ohlcv-api
+    command: uvicorn services.ohlcv_api.main:app --host 0.0.0.0 --port 8010
+    environment:
+      - REDIS_HOST=redis
+    volumes:
+      - ../config:/app/config
+    ports:
+      - "8010:8010"
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - trading-net
+
+volumes:
+  redis-data:
+
+networks:
+  trading-net:
+    driver: bridge
