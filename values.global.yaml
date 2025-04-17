@@ -4,6 +4,8 @@ global:
   nodeSelector:
     kubernetes.io/hostname: rpslave2 # ✅ Will be replaced dynamically via script
 indicator:
+  env:
+    REDIS_HOST: redis.trading.svc.cluster.local
   service:
     type: NodePort
     port: 8000
@@ -17,7 +19,7 @@ ohlcv-api:
     nodePort: 31020
 websocket-streamer:
   env:
-    REDIS_HOST: redis-master.trading.svc.cluster.local
+    REDIS_HOST: redis.trading.svc.cluster.local
   service:
     type: NodePort
     port: 8020

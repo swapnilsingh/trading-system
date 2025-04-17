@@ -22,16 +22,18 @@ registry = {
     "adx": compute_adx,
     "cci": compute_cci,
 
-    # EMA aliases - wrap as dict for parameter safety
-    "ema5": lambda df, params: compute_ema(df, {"period": 5}),
-    "ema10": lambda df, params: compute_ema(df, {"period": 10}),
-    "ema20": lambda df, params: compute_ema(df, {"period": 20}),
-    "ema50": lambda df, params: compute_ema(df, {"period": 50}),
-    "ema200": lambda df, params: compute_ema(df, {"period": 200}),
+    # EMA aliases
+    "ema5": lambda df, params: compute_ema(df, {"window": 5}),
+    "ema10": lambda df, params: compute_ema(df, {"window": 10}),
+    "ema20": lambda df, params: compute_ema(df, {"window": 20}),
+    "ema50": lambda df, params: compute_ema(df, {"window": 50}),
+    "ema200": lambda df, params: compute_ema(df, {"window": 200}),
 
     # SMA aliases
-    "sma5": lambda df, params: compute_sma(df, {"period": 5}),
-    "sma10": lambda df, params: compute_sma(df, {"period": 10}),
-    "sma50": lambda df, params: compute_sma(df, {"period": 50}),
-    "sma200": lambda df, params: compute_sma(df, {"period": 200}),
+    "sma5": lambda df, params: compute_sma(df, {"window": 5}),
+    "sma10": lambda df, params: compute_sma(df, {"window": 10}),
+    "sma20": lambda df, params: compute_sma(df, {"window": 20}),
+    "sma50": lambda df, params: compute_sma(df, {"window": 50}),
+    "sma200": lambda df, params: compute_sma(df, {"window": 200}),
+
 }
