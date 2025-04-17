@@ -1,0 +1,13 @@
+architecture: standalone
+auth:
+  enabled: false
+
+master:
+  nodeSelector:
+    kubernetes.io/hostname: rpslave2
+
+image:
+  registry: docker.io
+  repository: library/redis
+  tag: "7.2.4"
+  pullPolicy: IfNotPresent

@@ -1,0 +1,34 @@
+# indicator/values.yaml
+
+image:
+  # repository is omitted; it will be built using global.registry + .Chart.Name
+  tag: latest
+  pullPolicy: IfNotPresent
+
+symbol: BTCUSDT
+interval: 1min
+
+env:
+  REDIS_HOST: redis-master.trading.svc.cluster.local
+
+nodeSelector: {}
+  
+
+service:
+  type: NodePort   # or ClusterIP
+  port: 8000
+  targetPort: 8000
+  #nodePort: 31000  # only required if using NodePort
+
+
+
+autoscaling:
+  enabled: false
+
+serviceAccount:
+  create: true
+  name: ""
+
+ingress:
+  enabled: false
+

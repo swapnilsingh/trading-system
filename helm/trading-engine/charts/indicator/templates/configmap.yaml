@@ -1,0 +1,26 @@
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-config
+data:
+  config.yaml: |
+    symbol: {{ .Values.symbol }}
+    interval: {{ .Values.interval }}
+    use_json_logs: false
+    max_candles: 500
+
+    websocket:
+      base_url: wss://stream.binance.com:9443
+      stream_type: trade
+
+    redis:
+      host: {{ .Values.env.REDIS_HOST }}
+      port: 6379
+      db: 0
+      decode_responses: true
+
+    binance:
+      base_url: https://api.binance.com
+      endpoints:
+        klines: /api/v3/klines

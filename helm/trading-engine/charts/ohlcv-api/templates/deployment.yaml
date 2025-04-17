@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ohlcv-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ohlcv-api
+  template:
+    metadata:
+      labels:
+        app: ohlcv-api
+    spec:
+      containers:
+        - name: ohlcv-api
+          image: '{{ .Values.image.repository | default (printf "%s/%s" .Values.global.registry .Chart.Name) }}:{{ .Values.image.tag | default .Values.global.tag }}'
+          command: ["uvicorn", "services.ohlcv_api.main:app", "--host", "0.0.0.0", "--port", "8010"]
+          env:
+            - name: REDIS_HOST
+              value: "{{ .Values.env.REDIS_HOST }}"
+          ports:
+            - containerPort: 8010
+
+      nodeSelector:
+        {{- toYaml (.Values.nodeSelector | default .Values.global.nodeSelector) | nindent 8 }}

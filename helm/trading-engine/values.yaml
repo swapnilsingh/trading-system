@@ -1,0 +1,46 @@
+global:
+  registry: 192.168.1.121:30000
+  tag: latest
+  nodeSelector:
+    kubernetes.io/hostname: rpslave2
+
+indicator:
+  service:
+    type: NodePort
+    port: 8000
+    targetPort: 8000
+    nodePort: 31000
+
+ohlcv-api:
+  service:
+    type: NodePort
+    port: 8010
+    targetPort: 8010
+    nodePort: 31010
+
+websocket-streamer:
+  env:
+    REDIS_HOST: redis-master.trading.svc.cluster.local
+  service:
+    type: NodePort
+    port: 8020
+    targetPort: 8020
+    nodePort: 31020
+
+redis:
+  architecture: standalone
+  auth:
+    enabled: false
+
+  commonConfiguration: |-
+    appendonly yes
+    save ""
+
+  master:
+    nodeSelector:
+      kubernetes.io/hostname: rpslave2  # or whichever node you want
+
+    extraEnvVars:
+      - name: MALLOC
+        value: libc
+

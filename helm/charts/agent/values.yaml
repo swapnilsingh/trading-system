@@ -1,6 +1,0 @@
-symbol: BTCUSDT
-interval: 1m
-image:
-  repository: your-dockerhub-user/agent
-  tag: latest
-redisHost: redis.default.svc.cluster.local
