@@ -2,7 +2,7 @@ global:
   registry: registry.devops.svc.cluster.local:30000
   tag: latest
   nodeSelector:
-    kubernetes.io/hostname: rpslave2
+    kubernetes.io/hostname: rpslave2 # ✅ Will be replaced dynamically via script
 indicator:
   service:
     type: NodePort
@@ -23,14 +23,3 @@ websocket-streamer:
     port: 8020
     targetPort: 8020
     nodePort: 31030
-redis:
-  architecture: standalone
-  auth:
-    enabled: false
-  image:
-    registry: docker.io
-    repository: redis
-    tag: "7"
-  master:
-    nodeSelector:
-      kubernetes.io/hostname: rpslave2

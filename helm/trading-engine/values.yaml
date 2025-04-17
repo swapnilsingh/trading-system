@@ -27,20 +27,3 @@ websocket-streamer:
     targetPort: 8020
     nodePort: 31020
 
-redis:
-  architecture: standalone
-  auth:
-    enabled: false
-
-  commonConfiguration: |-
-    appendonly yes
-    save ""
-
-  master:
-    nodeSelector:
-      kubernetes.io/hostname: rpslave2  # or whichever node you want
-
-    extraEnvVars:
-      - name: MALLOC
-        value: libc
-

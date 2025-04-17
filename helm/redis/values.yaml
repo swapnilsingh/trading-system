@@ -1,0 +1,15 @@
+image:
+  repository: "registry.devops.svc.cluster.local:30000/trading-redis"
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+deployment:
+  replicas: 1
+  nodeSelector:
+    kubernetes.io/hostname: rpslave1
+
+resources:
+  limits:
+    memory: 150Mi
+  requests:
+    memory: 100Mi

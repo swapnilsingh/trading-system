@@ -1,7 +1,4 @@
 dependencies:
-- name: redis
-  repository: file://charts/redis
-  version: 17.17.1
 - name: websocket-streamer
   repository: file://charts/websocket-streamer
   version: 0.1.0
@@ -11,5 +8,5 @@ dependencies:
 - name: indicator
   repository: file://charts/indicator
   version: 0.1.0
-digest: sha256:986250ea4fc4ede14378ea2b3b0f83a83c60aa773a16606a261edbcc3a1d0830
-generated: "2025-04-17T14:49:14.400034558+05:30"
+digest: sha256:22b26a69ec1e409431dc83297b83abd36b6ad0355cad6ef4a0cf0f3c88a9e1f4
+generated: "2025-04-17T22:36:50.23266496+05:30"
