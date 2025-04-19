@@ -1,9 +1,7 @@
+pandas
 fastapi
 uvicorn
-pydantic
-pandas
 redis
-pyyaml
-ta
 httpx
-
+websockets
+PyYAML

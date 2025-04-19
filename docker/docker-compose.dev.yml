@@ -11,11 +11,11 @@ services:
     networks:
       - trading-net
 
-  indicator:
+  indicator-api:
     build:
       context: ../
       dockerfile: services/indicator_api/Dockerfile
-    container_name: indicator
+    container_name: indicator_api
     command: uvicorn services.indicator_api.main:app --host 0.0.0.0 --port 8000
     environment:
       - REDIS_HOST=redis
@@ -23,22 +23,6 @@ services:
       - ../config:/app/config
     ports:
       - "8000:8000"
-    depends_on:
-      - redis
-    restart: unless-stopped
-    networks:
-      - trading-net
-
-  websocket-streamer:
-    build:
-      context: ../
-      dockerfile: streamers/websocket/Dockerfile
-    container_name: websocket-streamer
-    command: python streamers/websocket/websocket_data.py
-    environment:
-      - REDIS_HOST=redis
-    volumes:
-      - ../config:/app/config
     depends_on:
       - redis
     restart: unless-stopped
@@ -57,6 +41,24 @@ services:
       - ../config:/app/config
     ports:
       - "8010:8010"
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - trading-net
+
+  websocket-api:
+    build:
+      context: ../
+      dockerfile: services/websocket_api/Dockerfile
+    container_name: websocket-api
+    command: uvicorn services.websocket_api.main:app --host 0.0.0.0 --port 8020
+    environment:
+      - REDIS_HOST=redis
+    volumes:
+      - ../config:/app/config
+    ports:
+      - "8020:8020"
     depends_on:
       - redis
     restart: unless-stopped

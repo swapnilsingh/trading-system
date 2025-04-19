@@ -1,6 +1,5 @@
-# utils/schemas.py
 from typing import Dict, Any, Optional, List
-from pydantic import BaseModel, ValidationError, Field
+from pydantic import BaseModel, ValidationError, Field, validator, StrictStr
 import math
 
 TICK_SCHEMA = [
@@ -28,7 +27,7 @@ INDICATOR_SCHEMA = [
     "bollinger_upper", "bollinger_lower", "bollinger_middle", "atr",
     "adx", "cci",
     "ema5", "ema10", "ema20", "ema50", "ema200",
-    "sma5", "sma10", "sma50", "sma200"
+    "sma5", "sma10", "sma20", "sma50", "sma200"
 ]
 
 class TickModel(BaseModel):
@@ -37,19 +36,31 @@ class TickModel(BaseModel):
     quantity: float
     trade_time: str
 
+class OHLCVRequest(BaseModel):
+    symbol: StrictStr
+    interval: StrictStr = Field(..., min_length=1)
+    start_time: Optional[int] = None
+    end_time: Optional[int] = None
+
 class OHLCVModel(BaseModel):
-    symbol: str
+    symbol: StrictStr = Field(..., min_length=1)
     open: float
     high: float
     low: float
     close: float
-    volume: float
-    start_time: str
-    end_time: str
+    volume: float = Field(..., ge=0)
+    start_time: int
+    end_time: int
+
+    @validator("symbol")
+    def validate_symbol(cls, v):
+        if not isinstance(v, str):
+            raise ValueError("symbol must be a string")
+        return v
 
 class TradeLogModel(BaseModel):
     symbol: str
-    action: str  # 'buy' or 'sell'
+    action: str
     price: float
     quantity: float
     timestamp: str
@@ -60,7 +71,7 @@ class VoteModel(BaseModel):
     symbol: str
     agent_id: str
     timestamp: str
-    vote: int  # -1, 0, 1
+    vote: int
 
 class EquityCurveModel(BaseModel):
     timestamp: str
@@ -71,20 +82,14 @@ class EquityCurveModel(BaseModel):
 class IndicatorModel(BaseModel):
     symbol: str
     timestamp: str
-
-    # Momentum Indicators
     rsi: Optional[float] = None
     macd: Optional[float] = None
     macd_signal: Optional[float] = None
     williams: Optional[float] = None
-
-    # Volatility Indicators
     bollinger_upper: Optional[float] = None
     bollinger_lower: Optional[float] = None
     bollinger_middle: Optional[float] = None
     atr: Optional[float] = None
-
-    # Trend Indicators
     adx: Optional[float] = None
     cci: Optional[float] = None
     ema5: Optional[float] = None
@@ -94,10 +99,10 @@ class IndicatorModel(BaseModel):
     ema200: Optional[float] = None
     sma5: Optional[float] = None
     sma10: Optional[float] = None
+    sma20: Optional[float] = None
     sma50: Optional[float] = None
     sma200: Optional[float] = None
 
-# API Request/Response Schemas
 class SignalRequest(BaseModel):
     symbol: str
     timestamp: str
@@ -106,12 +111,12 @@ class SignalRequest(BaseModel):
 class SignalResponse(BaseModel):
     symbol: str
     timestamp: str
-    signal: int  # -1 sell, 0 hold, 1 buy
+    signal: int
     reason: Optional[str] = None
 
 class TradeExecutionRequest(BaseModel):
     symbol: str
-    action: str  # 'buy' or 'sell'
+    action: str
     quantity: float
     price: float
     timestamp: str
@@ -120,15 +125,14 @@ class TradeExecutionRequest(BaseModel):
 
 class TradeExecutionResponse(BaseModel):
     trade_id: str
-    status: str  # 'success', 'failed'
+    status: str
     message: Optional[str] = None
     executed_price: Optional[float] = None
     timestamp: Optional[str] = None
 
-# Model inference related schemas
 class ModelInferenceRequest(BaseModel):
     model_name: str
-    input_features:  List[float] = Field(..., min_items=1)
+    input_features: List[float] = Field(..., min_items=1)
     timestamp: Optional[str] = None
     meta: Optional[Dict[str, Any]] = None
 
@@ -143,7 +147,7 @@ class ModelInferenceResponse(BaseModel):
 class AgentInput(BaseModel):
     symbol: str
     timestamp: str
-    indicators: IndicatorModel  # structured input
+    indicators: IndicatorModel
     meta: Optional[Dict[str, Any]] = None
 
 class AgentOutput(BaseModel):
@@ -169,7 +173,17 @@ class IndicatorCalculationRequest(BaseModel):
     interval: str
     indicators: Dict[str, IndicatorRequestItem]
 
+class StreamResponse(BaseModel):
+    message: str
 
+class StreamListResponse(BaseModel):
+    active_streams: List[str]
+
+class StreamUpdateRequest(BaseModel):
+    old_symbol: str
+    old_interval: str
+    new_symbol: str
+    new_interval: str
 
 SCHEMA_REGISTRY = {
     "tick": TickModel,
@@ -188,8 +202,10 @@ SCHEMA_REGISTRY = {
     "agent_output": AgentOutput,
     "batch_model_inference_request": BatchModelInferenceRequest,
     "indicator_calculation_request": IndicatorCalculationRequest,
-    "indicator_request_item" : IndicatorRequestItem
-
+    "indicator_request_item": IndicatorRequestItem,
+    "stream_response": StreamResponse,
+    "stream_list_response": StreamListResponse,
+    "stream_update_request": StreamUpdateRequest
 }
 
 def sanitize_for_json(data: dict) -> dict:
