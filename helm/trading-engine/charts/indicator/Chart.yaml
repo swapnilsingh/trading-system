@@ -1,5 +1,5 @@
 apiVersion: v2
-name: indicator
+name: indicator-api
 description: A Helm chart for indicator
 version: 0.1.0
 appVersion: "1.0"

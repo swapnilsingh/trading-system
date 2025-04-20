@@ -1,27 +1,24 @@
-indicator:
+indicator-api:
   nodeSelector:
-    kubernetes.io/hostname: rpslave1
+    kubernetes.io/hostname: rpslave1 # Ensure this matches your target node
   image:
     repository: 192.168.1.200:30000/indicator-api
     tag: latest
-
 ohlcv-api:
   nodeSelector:
-    kubernetes.io/hostname: rpslave1
+    kubernetes.io/hostname: rpslave1 # Ensure this matches your target node
   image:
     repository: 192.168.1.200:30000/ohlcv-api
     tag: latest
-
 websocket-api:
   nodeSelector:
-    kubernetes.io/hostname: rpslave1
+    kubernetes.io/hostname: rpslave1 # Ensure this matches your target node
   image:
     repository: 192.168.1.200:30000/websocket-api
     tag: latest
-
 redis:
   nodeSelector:
-    kubernetes.io/hostname: rpslave2
+    kubernetes.io/hostname: rpslave2 # You can choose a different node for Redis if needed
   image:
     repository: 192.168.1.200:30000/redis
     tag: "7"

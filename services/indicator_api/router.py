@@ -28,9 +28,22 @@ def get_indicator_data(redis_client, symbol, interval, start_time, end_time):
     raw_ohlcv_list = redis_client.lrange(redis_key, 0, -1)
     if not raw_ohlcv_list:
         return pd.DataFrame()  # Return an empty DataFrame if no data is found
+
     df = parse_ohlcv_list(raw_ohlcv_list)
+
+    # If no data is returned from parse_ohlcv_list, return empty DataFrame
+    if df.empty:
+        logger.warning(f"No OHLCV data for {symbol} from Redis.")
+        return df
+
+    # Check if the timestamp column exists
+    if 'timestamp' not in df.columns:
+        logger.error(f"❌ 'timestamp' column is missing from the data for {symbol}.")
+        return pd.DataFrame()
+
     df = df[(df["timestamp"] >= start_time) & (df["timestamp"] <= end_time)]
     return df
+
 
 # Fallback to Binance for missing data from Redis
 def fallback_to_binance(fallback_payload):
@@ -69,9 +82,10 @@ def calculate_indicators(payload: IndicatorCalculationRequest = Body(...)):
 
     for name, details in payload.indicators.items():
         try:
-            compute_func = registry.get(name)
-            if not compute_func:
+            meta = registry.get(name)
+            if not meta or "func" not in meta:
                 raise HTTPException(status_code=404, detail=f"Indicator '{name}' not found")
+            compute_func = meta["func"]
 
             try:
                 start_time = int(details.start_time)
@@ -120,58 +134,19 @@ def calculate_indicators(payload: IndicatorCalculationRequest = Body(...)):
             raise HTTPException(status_code=500, detail=f"Internal error computing {name}: {str(e)}")
 
     return results if results else HTTPException(422, "No indicators computed")
-    redis_client = get_redis_client()
-
-    # Validate the incoming request payload
-    validate_payload(payload)
-
-    results = {}
-
-    for name, details in payload.indicators.items():
-        try:
-            # Check if indicator is supported
-            compute_func = registry.get(name)
-            if not compute_func:
-                raise HTTPException(status_code=404, detail=f"Indicator '{name}' not found")
-
-            # Validate and fetch data from Redis
-            try:
-                start_time = int(details.start_time)
-                end_time = int(details.end_time)
-            except ValueError as ve:
-                raise HTTPException(status_code=422, detail=f"Invalid start/end time for '{name}': {str(ve)}")
-
-            df = get_indicator_data(redis_client, payload.symbol, payload.interval, start_time, end_time)
-
-            # If no data in Redis, trigger fallback to Binance
-            if df.empty:
-                logger.warning(f"⚠️ No data in Redis for {payload.symbol}, {name}. Triggering fallback.")
-                fallback_payload = {
-                    "symbol": payload.symbol,
-                    "interval": payload.interval,
-                    "start_time": start_time,
-                    "end_time": end_time
-                }
-                binance_data = fallback_to_binance(fallback_payload)
-                data_list = binance_data.get('data', [])
-                df = parse_ohlcv_list(data_list)
-                df = df[(df["timestamp"] >= start_time) & (df["timestamp"] <= end_time)]
-
-                if df.empty:
-                    logger.error(f"❌ Fallback failed for {name}")
-                    raise HTTPException(status_code=404, detail=f"No OHLCV data available after fallback for '{name}'")
-
-            # Apply the indicator function
-            result = process_indicator(compute_func, df, details.params or {})
-            results[name] = result
-
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"❌ Error while computing {name}", exc_info=True)
-            raise HTTPException(status_code=500, detail=f"Internal error computing {name}: {str(e)}")
-
-    if not results:
-        raise HTTPException(status_code=422, detail="No valid indicators provided or all failed")
-
-    return results
+    
+@router.get("/catalog")
+def get_indicator_catalog():
+    try:
+        catalog = {
+            name: {
+                "category": meta.get("category"),
+                "description": meta.get("description"),
+                "default_params": meta.get("params", {})
+            }
+            for name, meta in registry.items()
+        }
+        return {"indicators": catalog}
+    except Exception as e:
+        logger.error("Failed to fetch indicator catalog", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")

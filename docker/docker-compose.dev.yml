@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   redis:
     image: redis:7
@@ -64,6 +66,34 @@ services:
     restart: unless-stopped
     networks:
       - trading-net
+
+  integration-tests:
+    build:
+      context: ../
+      dockerfile: integration_tests/Dockerfile
+    container_name: integration-tests
+    depends_on:
+      - indicator-api
+      - ohlcv-api
+    volumes:
+      - ../:/app
+    command: ["pytest", "integration_tests/"]  # Running the integration tests
+    networks:
+      - trading-net
+
+  unit-tests:
+    build:
+      context: ../
+      dockerfile: tests/Dockerfile  # Make sure it points to the updated Dockerfile for unit tests
+    container_name: unit-tests
+    command: ["pytest", "tests/"]
+    volumes:
+      - ../:/app
+    depends_on:
+      - redis  # Ensure Redis service is available
+    networks:
+      - trading-net
+
 
 volumes:
   redis-data:

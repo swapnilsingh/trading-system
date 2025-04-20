@@ -5,21 +5,30 @@ set -e
 RELEASE_NAME="trading-engine"
 NAMESPACE="trading"
 HELM_PATH="helm/trading-engine"
-GLOBAL_CONFIG="values.global.yaml"
+VALUES_FILE="helm/trading-engine/values.yaml"  # Path to the values.yaml for the Helm chart
+NODE="rpslave1"  # Default node for indicator-api, can be updated
 
 usage() {
   echo "Usage:"
-  echo "  $0 start   # Deploy using configured nodeSelectors and registry"
-  echo "  $0 stop    # Delete the Helm release"
+  echo "  $0 start [node_name]  # Deploy using configured nodeSelectors for indicator-api (optionally specify node)"
+  echo "  $0 stop               # Delete the Helm release"
   exit 1
 }
 
 start() {
-  echo "🛠️  Updating image repositories to internal registry..."
-  yq eval '.global.image.repository = "registry.devops.svc.cluster.local:30000"' -i "$GLOBAL_CONFIG"
+  # Update the nodeSelector for indicator-api
+  if [ -n "$1" ]; then
+    NODE="$1"  # Override the default node if user provides one
+  fi
+  echo "🏷️  Setting nodeSelector for indicator-api to node: $NODE"
+  
+  # Update the nodeSelector in values.yaml
+  yq eval ".indicator-api.nodeSelector.\"kubernetes.io/hostname\" = \"$NODE\"" -i "$VALUES_FILE"
+  yq eval ".ohlcv-api.nodeSelector.\"kubernetes.io/hostname\" = \"$NODE\"" -i "$VALUES_FILE"
+  yq eval ".websocket-api.nodeSelector.\"kubernetes.io/hostname\" = \"$NODE\"" -i "$VALUES_FILE"
 
-  echo "🚀 Deploying trading engine using values from $GLOBAL_CONFIG..."
-  helm upgrade --install "$RELEASE_NAME" "$HELM_PATH" -n "$NAMESPACE" --create-namespace -f "$GLOBAL_CONFIG"
+  echo "🚀 Deploying trading engine using values from $VALUES_FILE..."
+  helm upgrade --install "$RELEASE_NAME" "$HELM_PATH" -n "$NAMESPACE" --create-namespace -f "$VALUES_FILE"
 }
 
 stop() {
@@ -30,7 +39,7 @@ stop() {
 # --- Main Execution ---
 case "$1" in
   start)
-    start
+    start "$2"  # Pass the second argument (node name) to start function
     ;;
   stop)
     stop
