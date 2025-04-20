@@ -1,24 +1,17 @@
+replicaCount: 1
+
 image:
+  repository: your-registry/your-image
   tag: latest
   pullPolicy: IfNotPresent
 
-env:
-  REDIS_HOST: redis-master.trading.svc.cluster.local
-
-nodeSelector: {}
-
 service:
-  type: NodePort
-  port: 8010
-  targetPort: 8010
-  nodePort: 31010
+  type: ClusterIP
+  port: 8000
 
-autoscaling:
-  enabled: false
+nodeSelector:
+  kubernetes.io/hostname: ""
 
-serviceAccount:
-  create: true
-  name: ""
+tolerations: []
 
-ingress:
-  enabled: false
+affinity: {}

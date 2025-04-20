@@ -1,5 +1,0 @@
-# redis/Chart.yaml
-apiVersion: v2
-name: redis
-version: 0.1.0
-description: Lightweight standalone Redis chart for ephemeral scalping workloads

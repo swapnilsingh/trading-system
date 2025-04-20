@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ohlcv-api
+  name: websocket-api
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ohlcv-api
+      app: websocket-api
   template:
     metadata:
       labels:
-        app: ohlcv-api
+        app: websocket-api
     spec:
       containers:
-        - name: ohlcv-api
+        - name: websocket-api
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
-            - containerPort: 8010
+            - containerPort: 8020
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}

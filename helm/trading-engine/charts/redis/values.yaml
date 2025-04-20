@@ -1,0 +1,19 @@
+replicaCount: 1
+
+image:
+  repository: redis
+  tag: "7"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 6379
+
+command: ["redis-server", "--appendonly", "yes", "--maxmemory", "100mb", "--maxmemory-policy", "allkeys-lru"]
+
+nodeSelector:
+  kubernetes.io/hostname: rpslave3
+
+tolerations: []
+
+affinity: {}

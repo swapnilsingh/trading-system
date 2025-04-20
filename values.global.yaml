@@ -3,6 +3,8 @@ global:
   tag: latest
   nodeSelector:
     kubernetes.io/hostname: rpslave2 # ✅ Will be replaced dynamically via script
+  image:
+    repository: registry.devops.svc.cluster.local:30000
 indicator:
   env:
     REDIS_HOST: redis.trading.svc.cluster.local

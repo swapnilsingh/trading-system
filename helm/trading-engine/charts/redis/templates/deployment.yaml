@@ -1,21 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ohlcv-api
+  name: redis
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ohlcv-api
+      app: redis
   template:
     metadata:
       labels:
-        app: ohlcv-api
+        app: redis
     spec:
       containers:
-        - name: ohlcv-api
+        - name: redis
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["redis-server", "--appendonly", "yes", "--maxmemory", "100mb", "--maxmemory-policy", "allkeys-lru"]
           ports:
-            - containerPort: 8010
+            - containerPort: 6379
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}

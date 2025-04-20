@@ -1,29 +1,27 @@
-global:
-  registry: 192.168.1.121:30000
-  tag: latest
-  nodeSelector:
-    kubernetes.io/hostname: rpslave2
-
 indicator:
-  service:
-    type: NodePort
-    port: 8000
-    targetPort: 8000
-    nodePort: 31000
+  nodeSelector:
+    kubernetes.io/hostname: rpslave1
+  image:
+    repository: 192.168.1.200:30000/indicator-api
+    tag: latest
 
 ohlcv-api:
-  service:
-    type: NodePort
-    port: 8010
-    targetPort: 8010
-    nodePort: 31010
+  nodeSelector:
+    kubernetes.io/hostname: rpslave1
+  image:
+    repository: 192.168.1.200:30000/ohlcv-api
+    tag: latest
 
-websocket-streamer:
-  env:
-    REDIS_HOST: redis-master.trading.svc.cluster.local
-  service:
-    type: NodePort
-    port: 8020
-    targetPort: 8020
-    nodePort: 31020
+websocket-api:
+  nodeSelector:
+    kubernetes.io/hostname: rpslave1
+  image:
+    repository: 192.168.1.200:30000/websocket-api
+    tag: latest
 
+redis:
+  nodeSelector:
+    kubernetes.io/hostname: rpslave2
+  image:
+    repository: 192.168.1.200:30000/redis
+    tag: "7"
