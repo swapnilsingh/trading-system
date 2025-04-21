@@ -1,0 +1,43 @@
+{
+    "symbol": "BTCUSDT",
+    "interval": "1min",
+    "indicators": {
+      "rsi": {
+        "start_time": "1680000000000",
+        "end_time": "1680003600000"
+      },
+      "macd": {
+        "start_time": "1680000000000",
+        "end_time": "1680003600000"
+      },
+      "bollinger": {
+        "start_time": "1680000000000",
+        "end_time": "1680003600000"
+      },
+      "atr": {
+        "start_time": "1680000000000",
+        "end_time": "1680003600000"
+      },
+      "adx": {
+        "start_time": "1680000000000",
+        "end_time": "1680003600000"
+      },
+      "cci": {
+        "start_time": "1680000000000",
+        "end_time": "1680003600000"
+      },
+      "williams": {
+        "start_time": "1680000000000",
+        "end_time": "1680003600000"
+      },
+      "ema20": {
+        "start_time": "1680000000000",
+        "end_time": "1680003600000"
+      },
+      "sma20": {
+        "start_time": "1680000000000",
+        "end_time": "1680003600000"
+      }
+    }
+  }
+  
