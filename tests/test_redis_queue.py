@@ -3,7 +3,7 @@ import json
 import pytest
 from unittest.mock import MagicMock, patch
 from utils import redis_queue
-from utils.redis_queue import push_to_queue, pop_from_queue
+from utils.redis_queue import push_to_queue, pop_from_queue, save_ohlcv_batch,get_ohlcv_key
 
 
 
@@ -29,13 +29,28 @@ def test_push_to_queue(mock_redis):
     mock_redis.rpush.assert_called_once()
     mock_redis.expire.assert_called_once()
 
-def test_save_ohlcv_batch(mock_redis):
-    data = [{
-        "symbol": "BTCUSDT", "open": 1, "high": 1, "low": 1,
-        "close": 1, "volume": 1, "start_time": 1, "end_time": 2
+def test_save_ohlcv_batch():
+    mock_redis = MagicMock()
+    mock_pipeline = MagicMock()
+    mock_redis.pipeline.return_value.__enter__.return_value = mock_pipeline
+
+    symbol = 'BTCUSDT'
+    interval = '1min'
+    candles = [{
+        "timestamp": 1744804680000,
+        "open": 84000.0,
+        "high": 84010.0,
+        "low": 83990.0,
+        "close": 84005.0,
+        "volume": 5.0,
+        "symbol": "BTCUSDT"
     }]
-    redis_queue.save_ohlcv_batch(mock_redis, "BTCUSDT", "1min", data)
-    assert mock_redis.rpush.called
+
+    save_ohlcv_batch(mock_redis, symbol, interval, candles)
+
+    expected_key = get_ohlcv_key(symbol, interval)  # Ensure this matches the actual logic
+    mock_pipeline.rpush.assert_called_once_with(expected_key, json.dumps(candles[0]))
+    mock_pipeline.execute.assert_called_once()
 
 def test_fetch_ohlcv_range(mock_redis):
     results = redis_queue.fetch_ohlcv_range(mock_redis, "BTCUSDT", "1min", 1713532790000, 1713532810000)

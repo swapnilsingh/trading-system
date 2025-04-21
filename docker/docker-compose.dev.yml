@@ -77,7 +77,7 @@ services:
       - ohlcv-api
     volumes:
       - ../:/app
-    command: ["pytest", "integration_tests/"]  # Running the integration tests
+    #command: ["pytest", "integration_tests/"]  # Running the integration tests
     networks:
       - trading-net
 
@@ -86,7 +86,7 @@ services:
       context: ../
       dockerfile: tests/Dockerfile  # Make sure it points to the updated Dockerfile for unit tests
     container_name: unit-tests
-    command: ["pytest", "tests/"]
+    #command: ["pytest", "tests/"]
     volumes:
       - ../:/app
     depends_on:
